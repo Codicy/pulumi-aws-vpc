@@ -1,6 +1,7 @@
 Pulumi.yaml
 Pulumi.*.yaml
 .pulumi/
+dist/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### VisualStudioCode template

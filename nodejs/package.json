@@ -1,6 +1,6 @@
 {
-  "name": "@jen20/pulumi-aws-vpc",
-  "version": "2.2.1",
+  "name": "@codicy/pulumi-aws-vpc",
+  "version": "2.3.3",
   "description": "Good-Practice AWS VPC Component for Pulumi",
   "author": "James Nugent",
   "license": "MPL-2.0",
@@ -8,7 +8,7 @@
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jen20/pulumi-aws-vpc.git"
+    "url": "git+https://github.com/Codicy/pulumi-aws-vpc.git"
   },
   "keywords": [
     "pulumi",
@@ -32,8 +32,8 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@pulumi/aws": "^2.2.0",
-    "@pulumi/pulumi": "^2.1.0",
+    "@pulumi/aws": "^4.0.0",
+    "@pulumi/pulumi": "^3.0.0",
     "ip-address": "^6.1.0",
     "jsbn": "^1.1.0"
   }
