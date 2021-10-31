@@ -168,7 +168,7 @@ export class Vpc extends ComponentResource {
                     mostRecent: true,
                 }));
                 this.natInstances.push(new aws.ec2.Instance(`${name}-nat-instance-${index + 1}`, {
-                    instanceType: "t2.micro",
+                    instanceType: "t3.nano",
                     ami: ami.id,
                     subnetId: publicSubnet.id,
                     sourceDestCheck: false,
