@@ -172,6 +172,9 @@ export class Vpc extends ComponentResource {
                     ami: ami.id,
                     subnetId: publicSubnet.id,
                     sourceDestCheck: false,
+                    tags: this.resourceTags({
+                        Name: `${args.description} NAT Instance ${index + 1}`,
+                    }),
                     userData: `#!/bin/bash
                                yum -y update
                                yum install -y aws-cfn-bootstrap
