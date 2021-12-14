@@ -29,6 +29,7 @@ export interface VpcArgs {
 
 export class Vpc extends ComponentResource {
     vpc: aws.ec2.Vpc;
+    securityGroup: aws.ec2.SecurityGroup;
     privateZone: aws.route53.Zone;
     dhcpOptionSet: aws.ec2.VpcDhcpOptions;
     internetGateway: aws.ec2.InternetGateway;
@@ -65,6 +66,27 @@ export class Vpc extends ComponentResource {
                 Name: `${args.description} VPC`,
             }),
         }, { parent: this });
+
+        // Security Group
+        this.securityGroup = new aws.ec2.SecurityGroup(`${name}-vpc-sg`, {
+            vpcId: this.vpc.id,
+            ingress: [
+                {
+                    fromPort: 0,
+                    toPort: 0,
+                    protocol: "-1",
+                    cidrBlocks: ["0.0.0.0/0"],
+                }
+            ],
+            egress: [
+                {
+                    fromPort: 0,
+                    toPort: 0,
+                    protocol: "-1",
+                    cidrBlocks: ["0.0.0.0/0"],
+                }
+            ]
+        })
 
         // Internet Gateway
         this.internetGateway = new aws.ec2.InternetGateway(`${name}-igw`, {
@@ -171,13 +193,13 @@ export class Vpc extends ComponentResource {
                     instanceType: "t3.nano",
                     ami: ami.id,
                     subnetId: publicSubnet.id,
+                    vpcSecurityGroupIds: [this.securityGroup.id],
                     sourceDestCheck: false,
                     tags: this.resourceTags({
                         Name: `${args.description} NAT Instance ${index + 1}`,
                     }),
                     userData: `#!/bin/bash
-                               yum -y update
-                               yum install -y aws-cfn-bootstrap
+                               yum erase -y sendmail
                                echo 1 > /proc/sys/net/ipv4/ip_forward
                                echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects
                                /sbin/iptables -t nat -A POSTROUTING -o eth0 -s ${publicSubnet.cidrBlock} -j MASQUERADE
@@ -300,6 +322,10 @@ export class Vpc extends ComponentResource {
 
     public vpcId(): Output<string> {
         return this.vpc.id;
+    }
+
+    public securityGroupId(): Output<string> {
+        return this.securityGroup.id;
     }
 
     private resourceTags(additionalTags: { [k: string]: Input<string> }) {

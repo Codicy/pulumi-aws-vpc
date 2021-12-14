@@ -1,6 +1,6 @@
 {
   "name": "@codicy/pulumi-aws-vpc",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "Good-Practice AWS VPC Component for Pulumi",
   "author": "James Nugent",
   "license": "MPL-2.0",
