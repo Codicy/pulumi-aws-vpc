@@ -20,6 +20,7 @@ export interface VpcArgs {
     zoneName?: string;
 
     natInstancesInsteadOfGateways: boolean;
+    natInstanceKeyPair?: string;
 
     endpoints: {
         s3: boolean;
@@ -29,7 +30,7 @@ export interface VpcArgs {
 
 export class Vpc extends ComponentResource {
     vpc: aws.ec2.Vpc;
-    securityGroup: aws.ec2.SecurityGroup;
+    natSecurityGroup: aws.ec2.SecurityGroup;
     privateZone: aws.route53.Zone;
     dhcpOptionSet: aws.ec2.VpcDhcpOptions;
     internetGateway: aws.ec2.InternetGateway;
@@ -67,26 +68,57 @@ export class Vpc extends ComponentResource {
             }),
         }, { parent: this });
 
-        // Security Group
-        this.securityGroup = new aws.ec2.SecurityGroup(`${name}-vpc-sg`, {
-            vpcId: this.vpc.id,
-            ingress: [
-                {
-                    fromPort: 0,
-                    toPort: 0,
-                    protocol: "-1",
-                    cidrBlocks: ["0.0.0.0/0"],
-                }
-            ],
-            egress: [
-                {
-                    fromPort: 0,
-                    toPort: 0,
-                    protocol: "-1",
-                    cidrBlocks: ["0.0.0.0/0"],
-                }
-            ]
-        })
+        // Security Group for NAT Instances
+        if (args.natInstancesInsteadOfGateways) {
+            if (args.natInstanceKeyPair == null) {
+                this.natSecurityGroup = new aws.ec2.SecurityGroup(`${name}-vpc-sg`, {
+                    vpcId: this.vpc.id,
+                    ingress: [
+                        {
+                            fromPort: 0,
+                            toPort: 0,
+                            protocol: "-1",
+                            securityGroups: [this.vpc.defaultSecurityGroupId]
+                        }
+                    ],
+                    egress: [
+                        {
+                            fromPort: 0,
+                            toPort: 0,
+                            protocol: "-1",
+                            cidrBlocks: ["0.0.0.0/0"],
+                        }
+                    ]
+                });    
+            }
+            else {
+                this.natSecurityGroup = new aws.ec2.SecurityGroup(`${name}-vpc-sg`, {
+                    vpcId: this.vpc.id,
+                    ingress: [
+                        {
+                            fromPort: 22,
+                            toPort: 22,
+                            protocol: "tcp",
+                            cidrBlocks: ["0.0.0.0/0"],
+                        },
+                        {
+                            fromPort: 0,
+                            toPort: 0,
+                            protocol: "-1",
+                            securityGroups: [this.vpc.defaultSecurityGroupId]
+                        }
+                    ],
+                    egress: [
+                        {
+                            fromPort: 0,
+                            toPort: 0,
+                            protocol: "-1",
+                            cidrBlocks: ["0.0.0.0/0"],
+                        }
+                    ]
+                });
+            }
+        }
 
         // Internet Gateway
         this.internetGateway = new aws.ec2.InternetGateway(`${name}-igw`, {
@@ -192,8 +224,9 @@ export class Vpc extends ComponentResource {
                 this.natInstances.push(new aws.ec2.Instance(`${name}-nat-instance-${index + 1}`, {
                     instanceType: "t3.nano",
                     ami: ami.id,
+                    keyName: args.natInstanceKeyPair,
                     subnetId: publicSubnet.id,
-                    vpcSecurityGroupIds: [this.securityGroup.id],
+                    vpcSecurityGroupIds: [this.natSecurityGroup.id],
                     sourceDestCheck: false,
                     tags: this.resourceTags({
                         Name: `${args.description} NAT Instance ${index + 1}`,
@@ -322,10 +355,6 @@ export class Vpc extends ComponentResource {
 
     public vpcId(): Output<string> {
         return this.vpc.id;
-    }
-
-    public securityGroupId(): Output<string> {
-        return this.securityGroup.id;
     }
 
     private resourceTags(additionalTags: { [k: string]: Input<string> }) {
